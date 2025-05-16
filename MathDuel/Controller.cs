@@ -1,49 +1,76 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 
 public class Controller
 {
+    private readonly List<int> equationList;
+    private readonly List<int> aList;
+    private readonly List<int> bList;
     public int score { get; set; }
     public int wrongAnswers { get; set; }
     private readonly IView view;
-    public Controller(IView view)
+
+    public Controller(IView view, string filename)
     {
         this.view = view;
-        this.score = 0;
-        this.wrongAnswers = 0;
+        score = 0;
+        wrongAnswers = 0;
+        LoadData(filename, out equationList, out aList, out bList);
     }
 
+    public void LoadData(string filename, out List<int> equations, out List<int> aList, out List<int> bList)
+    {
+        equations = new List<int>();
+        aList = new List<int>();
+        bList = new List<int>();
+
+        foreach (string line in File.ReadLines(filename))
+        {
+            string[] parts = line.Split(' ');
+            if (parts.Length < 3) continue;
+
+            if (parts[0] == "+")
+                equations.Add(0);
+            else if (parts[0] == "-")
+                equations.Add(1);
+            else
+                equations.Add(2);
+
+            int.TryParse(parts[1], out int numa);
+            aList.Add(numa);
+
+            int.TryParse(parts[2], out int numb);
+            bList.Add(numb);
+        }
+    }
     public void Run()
     {
         view.StartScreen();
-        Random rand = new Random();
-        Game(rand);
+        Game();
     }
 
-    public void Game(Random rand)
+    public void Game()
     {
-        while (wrongAnswers < 3)
+        for (int i = 0; i < equationList.Count; i++)
         {
-            int a = rand.Next(1, 11);     // 1 to 10
-            int b = rand.Next(1, 11);
-            int operation = rand.Next(3); // 0: +, 1: -, 2: *
-
             int correctAnswer;
             string question;
 
-            if (operation == 0)
+            if (equationList[i] == 0)
             {
-                correctAnswer = a + b;
-                question = $"{a} + {b} = ?";
+                correctAnswer = aList[i] + bList[i];
+                question = $"{aList[i]} + {bList[i]} = ?";
             }
-            else if (operation == 1)
+            else if (equationList[i] == 1)
             {
-                correctAnswer = a - b;
-                question = $"{a} - {b} = ?";
+                correctAnswer = aList[i] - bList[i];
+                question = $"{aList[i]} - {bList[i]} = ?";
             }
             else
             {
-                correctAnswer = a * b;
-                question = $"{a} * {b} = ?";
+                correctAnswer = aList[i] * bList[i];
+                question = $"{aList[i]} * {bList[i]} = ?";
             }
 
             int playerAnswer = int.Parse(view.GetQuestion(question));
@@ -57,6 +84,10 @@ public class Controller
             {
                 view.GetRightAnswer(correctAnswer);
                 wrongAnswers++;
+            }
+            if (wrongAnswers == 3)
+            {
+                break;
             }
         }
 
